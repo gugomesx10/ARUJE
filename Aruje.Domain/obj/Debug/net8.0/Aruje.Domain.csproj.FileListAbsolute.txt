@@ -1,0 +1,12 @@
+C:\Rider\Aruje-Back-End\Aruje.Domain\bin\Debug\net8.0\Aruje.Domain.deps.json
+C:\Rider\Aruje-Back-End\Aruje.Domain\bin\Debug\net8.0\Aruje.Domain.dll
+C:\Rider\Aruje-Back-End\Aruje.Domain\bin\Debug\net8.0\Aruje.Domain.pdb
+C:\Rider\Aruje-Back-End\Aruje.Domain\obj\Debug\net8.0\Aruje.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Rider\Aruje-Back-End\Aruje.Domain\obj\Debug\net8.0\Aruje.Domain.AssemblyInfoInputs.cache
+C:\Rider\Aruje-Back-End\Aruje.Domain\obj\Debug\net8.0\Aruje.Domain.AssemblyInfo.cs
+C:\Rider\Aruje-Back-End\Aruje.Domain\obj\Debug\net8.0\Aruje.Domain.csproj.CoreCompileInputs.cache
+C:\Rider\Aruje-Back-End\Aruje.Domain\obj\Debug\net8.0\Aruje.Domain.sourcelink.json
+C:\Rider\Aruje-Back-End\Aruje.Domain\obj\Debug\net8.0\Aruje.Domain.dll
+C:\Rider\Aruje-Back-End\Aruje.Domain\obj\Debug\net8.0\refint\Aruje.Domain.dll
+C:\Rider\Aruje-Back-End\Aruje.Domain\obj\Debug\net8.0\Aruje.Domain.pdb
+C:\Rider\Aruje-Back-End\Aruje.Domain\obj\Debug\net8.0\ref\Aruje.Domain.dll

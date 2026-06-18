@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Aruje-Back-End")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+be54ca98d8a0d995ba3e98054fd8c93a1d2e8314")]
 [assembly: System.Reflection.AssemblyProductAttribute("Aruje-Back-End")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Aruje-Back-End")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
