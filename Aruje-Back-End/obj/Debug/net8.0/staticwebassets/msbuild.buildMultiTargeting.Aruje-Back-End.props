@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\build\Aruje-Back-End.props" />
-</Project>
