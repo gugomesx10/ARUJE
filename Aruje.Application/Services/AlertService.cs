@@ -1,4 +1,6 @@
-﻿using Aruje.Application.Interfaces.Services;
+﻿using Aruje.Application.DTOs.Alerts;
+using Aruje.Application.Interfaces.Repositories;
+using Aruje.Application.Interfaces.Services;
 using Aruje.Domain.Entities;
 using Aruje.Domain.Enums;
 
@@ -6,6 +8,13 @@ namespace Aruje.Application.Services;
 
 public class AlertService : IAlertService
 {
+    private readonly IAlertRepository _alertRepository;
+
+    public AlertService(IAlertRepository alertRepository)
+    {
+        _alertRepository = alertRepository;
+    }
+
     public Task<Alert?> GenerateAlertFromReadingAsync(
         SensorReading reading,
         CancellationToken cancellationToken = default)
@@ -47,5 +56,50 @@ public class AlertService : IAlertService
         }
 
         return Task.FromResult<Alert?>(null);
+    }
+
+    public async Task<IReadOnlyList<AlertResponse>> GetAllAsync()
+    {
+        var alerts = await _alertRepository.GetAllAsync();
+
+        return alerts.Select(alert => new AlertResponse(
+            alert.Id,
+            alert.Title,
+            alert.Description,
+            alert.Severity,
+            alert.Status,
+            alert.SensorReadingId,
+            alert.CreatedAt
+        )).ToList();
+    }
+
+    public async Task<IReadOnlyList<AlertResponse>> GetByStatusAsync(AlertStatus status)
+    {
+        var alerts = await _alertRepository.GetByStatusAsync(status);
+
+        return alerts.Select(alert => new AlertResponse(
+            alert.Id,
+            alert.Title,
+            alert.Description,
+            alert.Severity,
+            alert.Status,
+            alert.SensorReadingId,
+            alert.CreatedAt
+        )).ToList();
+    }
+
+    public async Task<IReadOnlyList<AlertResponse>> GetBySeverityAsync(AlertSeverity severity)
+    {
+        var alerts = await _alertRepository.GetBySeverityAsync(severity);
+
+        return alerts.Select(alert => new AlertResponse(
+            alert.Id,
+            alert.Title,
+            alert.Description,
+            alert.Severity,
+            alert.Status,
+            alert.SensorReadingId,
+            alert.CreatedAt
+        )).ToList();
     }
 }

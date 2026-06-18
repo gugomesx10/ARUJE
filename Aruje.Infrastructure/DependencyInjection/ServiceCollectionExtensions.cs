@@ -1,10 +1,12 @@
 ﻿using Aruje.Application.Interfaces.Persistence;
 using Aruje.Application.Interfaces.Repositories;
+using Aruje.Application.Interfaces.Services;
 using Aruje.Infrastructure.Persistence.Context;
 using Aruje.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Aruje.Infrastructure.Services;
 
 namespace Aruje.Infrastructure.DependencyInjection;
 
@@ -22,6 +24,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUnitOfWork>(provider =>
             provider.GetRequiredService<ArujeDbContext>());
 
+        services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IFarmRepository, FarmRepository>();
         services.AddScoped<ICropRepository, CropRepository>();
         services.AddScoped<ISensorRepository, SensorRepository>();
@@ -29,6 +32,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAlertRepository, AlertRepository>();
         services.AddScoped<IAiAnalysisRepository, AiAnalysisRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        
 
         return services;
     }

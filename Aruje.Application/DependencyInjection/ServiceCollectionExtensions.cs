@@ -15,7 +15,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CropService>();
         services.AddScoped<SensorService>();
         services.AddScoped<SensorReadingService>();
-
+        services.AddScoped<UserService>();
         services.AddScoped<IIoTIngestionService, SensorReadingService>();
         services.AddScoped<IAlertService, AlertService>();
         services.AddScoped<IAiAnalysisService, AiAnalysisService>();
