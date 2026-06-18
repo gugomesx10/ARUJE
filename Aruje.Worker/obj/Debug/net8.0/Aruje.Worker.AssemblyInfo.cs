@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Aruje.Worker")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+be54ca98d8a0d995ba3e98054fd8c93a1d2e8314")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+301114e6802fd87bba4b41d10eb8187898a18cc2")]
 [assembly: System.Reflection.AssemblyProductAttribute("Aruje.Worker")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Aruje.Worker")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

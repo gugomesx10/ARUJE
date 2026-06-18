@@ -14,6 +14,19 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Class1.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Cache\" />
+    <Folder Include="ExternalServices\" />
+    <Folder Include="Messaging\" />
+    <Folder Include="Persistence\Configurations\" />
+    <Folder Include="Persistence\Context\" />
+    <Folder Include="Persistence\Repositories\" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
