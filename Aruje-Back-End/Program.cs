@@ -3,11 +3,43 @@ using Aruje.Application.DependencyInjection;
 using Aruje.Infrastructure.DependencyInjection;
 using Microsoft.OpenApi.Models;
 using Aruje_Back_End.Middlewares;
+using Aruje_Back_End.Filters;
+using Aruje_Back_End.Responses;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Controllers
-builder.Services.AddControllers();
+builder.Services.AddScoped<ValidationFilter>();
+
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ValidationFilter>();
+});
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(item => item.Value?.Errors.Count > 0)
+            .SelectMany(item => item.Value!.Errors)
+            .Select(error =>
+                string.IsNullOrWhiteSpace(error.ErrorMessage)
+                    ? error.Exception?.Message ?? "Invalid request value."
+                    : error.ErrorMessage)
+            .ToList();
+
+        return new BadRequestObjectResult(
+            new ApiErrorResponse(
+                StatusCodes.Status400BadRequest,
+                "Invalid request.",
+                null,
+                errors
+            )
+        );
+    };
+});
 
 // Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();

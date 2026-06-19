@@ -1,6 +1,25 @@
-﻿namespace Aruje.Application.Validators.Farms;
+﻿using Aruje.Application.DTOs.Farms;
+using FluentValidation;
 
-public class UpdateFarmRequestValidator
+namespace Aruje.Application.Validators.Farms;
+
+public class UpdateFarmRequestValidator : AbstractValidator<UpdateFarmRequest>
 {
-    
+    public UpdateFarmRequestValidator()
+    {
+        RuleFor(request => request.Name)
+            .NotEmpty()
+            .MaximumLength(120);
+
+        RuleFor(request => request.OwnerName)
+            .NotEmpty()
+            .MaximumLength(120);
+
+        RuleFor(request => request.Location)
+            .NotEmpty()
+            .MaximumLength(200);
+
+        RuleFor(request => request.TotalAreaHectares)
+            .GreaterThan(0);
+    }
 }

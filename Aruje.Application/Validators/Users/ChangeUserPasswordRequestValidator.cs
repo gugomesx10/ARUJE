@@ -1,6 +1,15 @@
-﻿namespace Aruje.Application.Validators.Users;
+﻿using Aruje.Application.DTOs.Users;
+using FluentValidation;
 
-public class ChangeUserPasswordRequestValidator
+namespace Aruje.Application.Validators.Users;
+
+public class ChangeUserPasswordRequestValidator : AbstractValidator<ChangeUserPasswordRequest>
 {
-    
+    public ChangeUserPasswordRequestValidator()
+    {
+        RuleFor(request => request.NewPassword)
+            .NotEmpty()
+            .MinimumLength(8)
+            .MaximumLength(80);
+    }
 }

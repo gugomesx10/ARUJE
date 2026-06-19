@@ -1,6 +1,13 @@
-﻿namespace Aruje.Application.Validators.Users;
+﻿using Aruje.Application.DTOs.Users;
+using FluentValidation;
 
-public class ChangeUserRoleRequestValidator
+namespace Aruje.Application.Validators.Users;
+
+public class ChangeUserRoleRequestValidator : AbstractValidator<ChangeUserRoleRequest>
 {
-    
+    public ChangeUserRoleRequestValidator()
+    {
+        RuleFor(request => request.Role)
+            .IsInEnum();
+    }
 }
