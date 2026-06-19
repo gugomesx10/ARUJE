@@ -2,7 +2,6 @@
 using Aruje.Application.Services;
 using Aruje_Back_End.Responses;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Swashbuckle.AspNetCore.Annotations;
 
 namespace Aruje_Back_End.Controllers;
@@ -24,6 +23,68 @@ public class CropsController : ControllerBase
     }
 
     /// <summary>
+    /// Lista todas as plantações ativas.
+    /// </summary>
+    [HttpGet]
+    [SwaggerOperation(
+        Summary = "Listar plantações",
+        Description = "Retorna todas as plantações ativas cadastradas no sistema."
+    )]
+    [ProducesResponseType(typeof(IReadOnlyList<CropResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IReadOnlyList<CropResponse>>> GetAll()
+    {
+        var crops = await _cropService.GetAllAsync();
+
+        if (!crops.Any())
+            return NoContent();
+
+        return Ok(crops);
+    }
+
+    /// <summary>
+    /// Busca uma plantação pelo identificador.
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    [SwaggerOperation(
+        Summary = "Buscar plantação por ID",
+        Description = "Retorna os dados de uma plantação específica."
+    )]
+    [ProducesResponseType(typeof(CropResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<CropResponse>> GetById([FromRoute] Guid id)
+    {
+        var crop = await _cropService.GetByIdAsync(id);
+
+        return Ok(crop);
+    }
+
+    /// <summary>
+    /// Lista plantações por fazenda.
+    /// </summary>
+    [HttpGet("by-farm/{farmId:guid}")]
+    [SwaggerOperation(
+        Summary = "Listar plantações por fazenda",
+        Description = "Retorna todas as plantações vinculadas a uma fazenda específica."
+    )]
+    [ProducesResponseType(typeof(IReadOnlyList<CropResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IReadOnlyList<CropResponse>>> GetByFarmId(
+        [FromRoute] Guid farmId)
+    {
+        var crops = await _cropService.GetByFarmIdAsync(farmId);
+
+        if (!crops.Any())
+            return NoContent();
+
+        return Ok(crops);
+    }
+
+    /// <summary>
     /// Cadastra uma nova plantação.
     /// </summary>
     [HttpPost]
@@ -40,79 +101,56 @@ public class CropsController : ControllerBase
         [FromBody] CreateCropRequest request,
         CancellationToken cancellationToken)
     {
-        try
-        {
-            var crop = await _cropService.CreateAsync(request, cancellationToken);
+        var crop = await _cropService.CreateAsync(request, cancellationToken);
 
-            return CreatedAtAction(nameof(GetByFarmId), new { farmId = crop.FarmId }, crop);
-        }
-        catch (ArgumentException ex) when (ex.Message.Contains("Farm not found"))
-        {
-            return NotFound(new ApiErrorResponse(
-                StatusCodes.Status404NotFound,
-                ex.Message
-            ));
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new ApiErrorResponse(
-                StatusCodes.Status400BadRequest,
-                ex.Message
-            ));
-        }
-        catch (DbUpdateException ex)
-        {
-            return Conflict(new ApiErrorResponse(
-                StatusCodes.Status409Conflict,
-                "Conflito ao cadastrar plantação.",
-                ex.InnerException?.Message
-            ));
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new ApiErrorResponse(
-                    StatusCodes.Status500InternalServerError,
-                    "Erro inesperado ao cadastrar plantação.",
-                    ex.Message
-                )
-            );
-        }
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = crop.Id },
+            crop
+        );
     }
 
     /// <summary>
-    /// Lista plantações de uma fazenda.
+    /// Atualiza uma plantação existente.
     /// </summary>
-    [HttpGet("by-farm/{farmId:guid}")]
+    [HttpPut("{id:guid}")]
     [SwaggerOperation(
-        Summary = "Listar plantações por fazenda",
-        Description = "Retorna todas as plantações ativas vinculadas a uma fazenda específica."
+        Summary = "Atualizar plantação",
+        Description = "Atualiza os dados principais de uma plantação existente."
     )]
-    [ProducesResponseType(typeof(IReadOnlyList<CropResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
-    public async Task<ActionResult<IReadOnlyList<CropResponse>>> GetByFarmId([FromRoute] Guid farmId)
+    public async Task<IActionResult> Update(
+        [FromRoute] Guid id,
+        [FromBody] UpdateCropRequest request,
+        CancellationToken cancellationToken)
     {
-        try
-        {
-            var crops = await _cropService.GetByFarmIdAsync(farmId);
+        await _cropService.UpdateAsync(id, request, cancellationToken);
 
-            if (!crops.Any())
-                return NoContent();
+        return NoContent();
+    }
 
-            return Ok(crops);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(
-                StatusCodes.Status500InternalServerError,
-                new ApiErrorResponse(
-                    StatusCodes.Status500InternalServerError,
-                    "Erro inesperado ao listar plantações.",
-                    ex.Message
-                )
-            );
-        }
+    /// <summary>
+    /// Remove logicamente uma plantação.
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [SwaggerOperation(
+        Summary = "Remover plantação",
+        Description = "Realiza a remoção lógica da plantação, mantendo o histórico no banco."
+    )]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Delete(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        await _cropService.DeleteAsync(id, cancellationToken);
+
+        return NoContent();
     }
 }

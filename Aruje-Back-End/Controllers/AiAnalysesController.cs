@@ -23,7 +23,7 @@ public class AiAnalysesController : ControllerBase
     }
 
     /// <summary>
-    /// Lista todas as análises inteligentes.
+    /// Lista todas as análises inteligentes ativas.
     /// </summary>
     [HttpGet]
     [SwaggerOperation(
@@ -44,7 +44,25 @@ public class AiAnalysesController : ControllerBase
     }
 
     /// <summary>
-    /// Busca análise inteligente por alerta.
+    /// Busca uma análise pelo identificador.
+    /// </summary>
+    [HttpGet("{id:guid}")]
+    [SwaggerOperation(
+        Summary = "Buscar análise por ID",
+        Description = "Retorna os dados de uma análise inteligente específica."
+    )]
+    [ProducesResponseType(typeof(AiAnalysisResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<AiAnalysisResponse>> GetById([FromRoute] Guid id)
+    {
+        var analysis = await _aiAnalysisService.GetByIdAsync(id);
+
+        return Ok(analysis);
+    }
+
+    /// <summary>
+    /// Busca uma análise vinculada a um alerta.
     /// </summary>
     [HttpGet("by-alert/{alertId:guid}")]
     [SwaggerOperation(
@@ -59,12 +77,27 @@ public class AiAnalysesController : ControllerBase
     {
         var analysis = await _aiAnalysisService.GetByAlertIdAsync(alertId);
 
-        if (analysis is null)
-            return NotFound(new ApiErrorResponse(
-                StatusCodes.Status404NotFound,
-                "AI analysis not found for this alert."
-            ));
-
         return Ok(analysis);
+    }
+
+    /// <summary>
+    /// Remove logicamente uma análise inteligente.
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [SwaggerOperation(
+        Summary = "Remover análise da IA",
+        Description = "Realiza a remoção lógica de uma análise inteligente, mantendo o histórico no banco."
+    )]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Delete(
+        [FromRoute] Guid id,
+        CancellationToken cancellationToken)
+    {
+        await _aiAnalysisService.DeleteAsync(id, cancellationToken);
+
+        return NoContent();
     }
 }
