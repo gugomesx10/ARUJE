@@ -1,4 +1,5 @@
-﻿using Aruje.Application.DTOs.Auth;
+﻿using System.Security.Claims;
+using Aruje.Application.DTOs.Auth;
 using Aruje.Application.Services;
 using Aruje_Back_End.Responses;
 using Microsoft.AspNetCore.Authorization;
@@ -41,6 +42,44 @@ public class AuthController : ControllerBase
     public async Task<ActionResult<AuthResponse>> Login([FromBody] LoginRequest request)
     {
         var response = await _authService.LoginAsync(request);
+
+        return Ok(response);
+    }
+
+    /// <summary>
+    /// Retorna os dados do usuário autenticado.
+    /// </summary>
+    /// <returns>Dados extraídos do token JWT do usuário logado.</returns>
+    [Authorize]
+    [HttpGet("me")]
+    [SwaggerOperation(
+        Summary = "Buscar usuário autenticado",
+        Description = "Retorna as informações do usuário logado a partir do token JWT enviado na requisição."
+    )]
+    [ProducesResponseType(typeof(CurrentUserResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+    public ActionResult<CurrentUserResponse> Me()
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var fullName = User.FindFirstValue(ClaimTypes.Name);
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        var role = User.FindFirstValue(ClaimTypes.Role);
+
+        if (!Guid.TryParse(userIdValue, out var userId))
+        {
+            return Unauthorized(new ApiErrorResponse(
+                StatusCodes.Status401Unauthorized,
+                "Invalid authenticated user."
+            ));
+        }
+
+        var response = new CurrentUserResponse(
+            userId,
+            fullName ?? string.Empty,
+            email ?? string.Empty,
+            role ?? string.Empty
+        );
 
         return Ok(response);
     }
