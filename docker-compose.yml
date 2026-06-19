@@ -37,5 +37,31 @@ services:
       Jwt__Audience: ${JWT_AUDIENCE}
       Jwt__ExpirationMinutes: ${JWT_EXPIRATION_MINUTES}
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: aruje-prometheus
+    restart: unless-stopped
+    depends_on:
+      - aruje-api
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: aruje-grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - aruje_grafana_data:/var/lib/grafana
+
 volumes:
   aruje_postgres_data:
+  aruje_grafana_data:

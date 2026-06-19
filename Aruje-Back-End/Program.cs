@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text.Json;
 using Aruje_Back_End.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -156,6 +157,8 @@ app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
+app.UseHttpMetrics();
+
 app.UseAuthentication();
 
 app.UseAuthorization();
@@ -182,6 +185,8 @@ app.MapHealthChecks("/health", new Microsoft.AspNetCore.Diagnostics.HealthChecks
         await context.Response.WriteAsync(JsonSerializer.Serialize(response));
     }
 });
+
+app.MapMetrics();
 
 app.MapControllers();
 
