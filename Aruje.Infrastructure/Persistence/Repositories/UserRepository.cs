@@ -14,6 +14,8 @@ public class UserRepository : Repository<User>, IUserRepository
     public async Task<User?> GetByEmailAsync(string email)
     {
         return await DbSet
-            .FirstOrDefaultAsync(x => x.Email == email && x.IsActive);
+            .FirstOrDefaultAsync(user =>
+                user.IsActive &&
+                user.Email == email);
     }
 }

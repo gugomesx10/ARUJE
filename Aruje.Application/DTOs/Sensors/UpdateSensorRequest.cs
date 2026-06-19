@@ -1,6 +1,9 @@
-﻿namespace Aruje.Application.DTOs.Sensors;
+﻿using Aruje.Domain.Enums;
 
-public class UpdateSensorRequest
-{
-    
-}
+namespace Aruje.Application.DTOs.Sensors;
+
+public record UpdateSensorRequest(
+    string Name,
+    SensorType Type,
+    string SerialNumber
+);

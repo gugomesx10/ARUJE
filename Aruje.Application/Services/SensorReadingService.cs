@@ -1,4 +1,5 @@
 ﻿using Aruje.Application.DTOs.SensorReadings;
+using Aruje.Application.Exceptions;
 using Aruje.Application.Interfaces.Persistence;
 using Aruje.Application.Interfaces.Repositories;
 using Aruje.Application.Interfaces.Services;
@@ -34,6 +35,55 @@ public class SensorReadingService : IIoTIngestionService
         _unitOfWork = unitOfWork;
     }
 
+    public async Task<IReadOnlyList<SensorReadingResponse>> GetAllAsync()
+    {
+        var readings = await _sensorReadingRepository.GetAllAsync();
+
+        return readings.Select(ToResponse).ToList();
+    }
+
+    public async Task<SensorReadingResponse> GetByIdAsync(Guid id)
+    {
+        var reading = await _sensorReadingRepository.GetByIdAsync(id);
+
+        if (reading is null || !reading.IsActive)
+            throw new NotFoundException("Sensor reading not found.");
+
+        return ToResponse(reading);
+    }
+
+    public async Task<IReadOnlyList<SensorReadingResponse>> GetBySensorIdAsync(Guid sensorId)
+    {
+        var sensor = await _sensorRepository.GetByIdAsync(sensorId);
+
+        if (sensor is null || !sensor.IsActive)
+            throw new NotFoundException("Sensor not found.");
+
+        var readings = await _sensorReadingRepository.GetBySensorIdAsync(sensorId);
+
+        return readings.Select(ToResponse).ToList();
+    }
+
+    public async Task<IReadOnlyList<SensorReadingResponse>> GetLatestBySensorIdAsync(
+        Guid sensorId,
+        int quantity)
+    {
+        if (quantity <= 0)
+            throw new ValidationException("Quantity must be greater than zero.");
+
+        var sensor = await _sensorRepository.GetByIdAsync(sensorId);
+
+        if (sensor is null || !sensor.IsActive)
+            throw new NotFoundException("Sensor not found.");
+
+        var readings = await _sensorReadingRepository.GetLatestBySensorIdAsync(
+            sensorId,
+            quantity
+        );
+
+        return readings.Select(ToResponse).ToList();
+    }
+
     public async Task<SensorReading> RegisterReadingAsync(
         Guid sensorId,
         double? temperature,
@@ -45,8 +95,8 @@ public class SensorReadingService : IIoTIngestionService
     {
         var sensor = await _sensorRepository.GetByIdAsync(sensorId);
 
-        if (sensor is null)
-            throw new ArgumentException("Sensor not found.");
+        if (sensor is null || !sensor.IsActive)
+            throw new NotFoundException("Sensor not found.");
 
         var reading = new SensorReading(
             sensorId,
@@ -96,6 +146,24 @@ public class SensorReadingService : IIoTIngestionService
             cancellationToken
         );
 
+        return ToResponse(reading);
+    }
+
+    public async Task DeleteAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var reading = await _sensorReadingRepository.GetByIdAsync(id);
+
+        if (reading is null || !reading.IsActive)
+            throw new NotFoundException("Sensor reading not found.");
+
+        await _sensorReadingRepository.DeleteAsync(reading);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    private static SensorReadingResponse ToResponse(SensorReading reading)
+    {
         return new SensorReadingResponse(
             reading.Id,
             reading.SensorId,

@@ -1,6 +1,7 @@
-﻿namespace Aruje.Application.DTOs.Users;
+﻿using Aruje.Domain.Enums;
 
-public class ChangeUserRoleRequest
-{
-    
-}
+namespace Aruje.Application.DTOs.Users;
+
+public record ChangeUserRoleRequest(
+    UserRole Role
+);

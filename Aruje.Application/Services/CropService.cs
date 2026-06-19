@@ -1,4 +1,5 @@
 ﻿using Aruje.Application.DTOs.Crops;
+using Aruje.Application.Exceptions;
 using Aruje.Application.Interfaces.Persistence;
 using Aruje.Application.Interfaces.Repositories;
 using Aruje.Domain.Entities;
@@ -21,14 +22,43 @@ public class CropService
         _unitOfWork = unitOfWork;
     }
 
+    public async Task<IReadOnlyList<CropResponse>> GetAllAsync()
+    {
+        var crops = await _cropRepository.GetAllAsync();
+
+        return crops.Select(ToResponse).ToList();
+    }
+
+    public async Task<CropResponse> GetByIdAsync(Guid id)
+    {
+        var crop = await _cropRepository.GetByIdAsync(id);
+
+        if (crop is null || !crop.IsActive)
+            throw new NotFoundException("Crop not found.");
+
+        return ToResponse(crop);
+    }
+
+    public async Task<IReadOnlyList<CropResponse>> GetByFarmIdAsync(Guid farmId)
+    {
+        var farm = await _farmRepository.GetByIdAsync(farmId);
+
+        if (farm is null || !farm.IsActive)
+            throw new NotFoundException("Farm not found.");
+
+        var crops = await _cropRepository.GetByFarmIdAsync(farmId);
+
+        return crops.Select(ToResponse).ToList();
+    }
+
     public async Task<CropResponse> CreateAsync(
         CreateCropRequest request,
         CancellationToken cancellationToken = default)
     {
         var farm = await _farmRepository.GetByIdAsync(request.FarmId);
 
-        if (farm is null)
-            throw new ArgumentException("Farm not found.");
+        if (farm is null || !farm.IsActive)
+            throw new NotFoundException("Farm not found.");
 
         var crop = new Crop(
             request.Name,
@@ -41,6 +71,45 @@ public class CropService
         await _cropRepository.AddAsync(crop);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        return ToResponse(crop);
+    }
+
+    public async Task UpdateAsync(
+        Guid id,
+        UpdateCropRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var crop = await _cropRepository.GetByIdAsync(id);
+
+        if (crop is null || !crop.IsActive)
+            throw new NotFoundException("Crop not found.");
+
+        crop.Update(
+            request.Name,
+            request.Type,
+            request.AreaHectares,
+            request.PlantingDate
+        );
+
+        await _cropRepository.UpdateAsync(crop);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var crop = await _cropRepository.GetByIdAsync(id);
+
+        if (crop is null || !crop.IsActive)
+            throw new NotFoundException("Crop not found.");
+
+        await _cropRepository.DeleteAsync(crop);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    private static CropResponse ToResponse(Crop crop)
+    {
         return new CropResponse(
             crop.Id,
             crop.Name,
@@ -50,20 +119,5 @@ public class CropService
             crop.FarmId,
             crop.IsActive
         );
-    }
-
-    public async Task<IReadOnlyList<CropResponse>> GetByFarmIdAsync(Guid farmId)
-    {
-        var crops = await _cropRepository.GetByFarmIdAsync(farmId);
-
-        return crops.Select(crop => new CropResponse(
-            crop.Id,
-            crop.Name,
-            crop.Type,
-            crop.AreaHectares,
-            crop.PlantingDate,
-            crop.FarmId,
-            crop.IsActive
-        )).ToList();
     }
 }

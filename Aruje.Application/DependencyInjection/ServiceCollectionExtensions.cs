@@ -15,10 +15,15 @@ public static class ServiceCollectionExtensions
         services.AddScoped<CropService>();
         services.AddScoped<SensorService>();
         services.AddScoped<SensorReadingService>();
+        services.AddScoped<AlertService>();
+        services.AddScoped<AiAnalysisService>();
         services.AddScoped<UserService>();
-        services.AddScoped<IIoTIngestionService, SensorReadingService>();
-        services.AddScoped<IAlertService, AlertService>();
-        services.AddScoped<IAiAnalysisService, AiAnalysisService>();
+        services.AddScoped<IIoTIngestionService>(provider =>
+            provider.GetRequiredService<SensorReadingService>());
+        services.AddScoped<IAlertService>(provider =>
+            provider.GetRequiredService<AlertService>());
+        services.AddScoped<IAiAnalysisService>(provider =>
+            provider.GetRequiredService<AiAnalysisService>());
 
         return services;
     }

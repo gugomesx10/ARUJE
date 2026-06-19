@@ -1,4 +1,6 @@
 ﻿using Aruje.Application.DTOs.Alerts;
+using Aruje.Application.Exceptions;
+using Aruje.Application.Interfaces.Persistence;
 using Aruje.Application.Interfaces.Repositories;
 using Aruje.Application.Interfaces.Services;
 using Aruje.Domain.Entities;
@@ -9,10 +11,14 @@ namespace Aruje.Application.Services;
 public class AlertService : IAlertService
 {
     private readonly IAlertRepository _alertRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public AlertService(IAlertRepository alertRepository)
+    public AlertService(
+        IAlertRepository alertRepository,
+        IUnitOfWork unitOfWork)
     {
         _alertRepository = alertRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public Task<Alert?> GenerateAlertFromReadingAsync(
@@ -62,37 +68,94 @@ public class AlertService : IAlertService
     {
         var alerts = await _alertRepository.GetAllAsync();
 
-        return alerts.Select(alert => new AlertResponse(
-            alert.Id,
-            alert.Title,
-            alert.Description,
-            alert.Severity,
-            alert.Status,
-            alert.SensorReadingId,
-            alert.CreatedAt
-        )).ToList();
+        return alerts.Select(ToResponse).ToList();
+    }
+
+    public async Task<AlertResponse> GetByIdAsync(Guid id)
+    {
+        var alert = await _alertRepository.GetByIdAsync(id);
+
+        if (alert is null || !alert.IsActive)
+            throw new NotFoundException("Alert not found.");
+
+        return ToResponse(alert);
     }
 
     public async Task<IReadOnlyList<AlertResponse>> GetByStatusAsync(AlertStatus status)
     {
         var alerts = await _alertRepository.GetByStatusAsync(status);
 
-        return alerts.Select(alert => new AlertResponse(
-            alert.Id,
-            alert.Title,
-            alert.Description,
-            alert.Severity,
-            alert.Status,
-            alert.SensorReadingId,
-            alert.CreatedAt
-        )).ToList();
+        return alerts.Select(ToResponse).ToList();
     }
 
     public async Task<IReadOnlyList<AlertResponse>> GetBySeverityAsync(AlertSeverity severity)
     {
         var alerts = await _alertRepository.GetBySeverityAsync(severity);
 
-        return alerts.Select(alert => new AlertResponse(
+        return alerts.Select(ToResponse).ToList();
+    }
+
+    public async Task StartProcessingAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var alert = await _alertRepository.GetByIdAsync(id);
+
+        if (alert is null || !alert.IsActive)
+            throw new NotFoundException("Alert not found.");
+
+        alert.StartProcessing();
+
+        await _alertRepository.UpdateAsync(alert);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task ResolveAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var alert = await _alertRepository.GetByIdAsync(id);
+
+        if (alert is null || !alert.IsActive)
+            throw new NotFoundException("Alert not found.");
+
+        alert.Resolve();
+
+        await _alertRepository.UpdateAsync(alert);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task CloseAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var alert = await _alertRepository.GetByIdAsync(id);
+
+        if (alert is null || !alert.IsActive)
+            throw new NotFoundException("Alert not found.");
+
+        alert.Close();
+
+        await _alertRepository.UpdateAsync(alert);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var alert = await _alertRepository.GetByIdAsync(id);
+
+        if (alert is null || !alert.IsActive)
+            throw new NotFoundException("Alert not found.");
+
+        await _alertRepository.DeleteAsync(alert);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    private static AlertResponse ToResponse(Alert alert)
+    {
+        return new AlertResponse(
             alert.Id,
             alert.Title,
             alert.Description,
@@ -100,6 +163,6 @@ public class AlertService : IAlertService
             alert.Status,
             alert.SensorReadingId,
             alert.CreatedAt
-        )).ToList();
+        );
     }
 }

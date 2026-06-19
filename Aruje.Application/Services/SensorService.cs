@@ -1,4 +1,5 @@
 ﻿using Aruje.Application.DTOs.Sensors;
+using Aruje.Application.Exceptions;
 using Aruje.Application.Interfaces.Persistence;
 using Aruje.Application.Interfaces.Repositories;
 using Aruje.Domain.Entities;
@@ -21,12 +22,43 @@ public class SensorService
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<SensorResponse> CreateAsync(CreateSensorRequest request, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<SensorResponse>> GetAllAsync()
+    {
+        var sensors = await _sensorRepository.GetAllAsync();
+
+        return sensors.Select(ToResponse).ToList();
+    }
+
+    public async Task<SensorResponse> GetByIdAsync(Guid id)
+    {
+        var sensor = await _sensorRepository.GetByIdAsync(id);
+
+        if (sensor is null || !sensor.IsActive)
+            throw new NotFoundException("Sensor not found.");
+
+        return ToResponse(sensor);
+    }
+
+    public async Task<IReadOnlyList<SensorResponse>> GetByCropIdAsync(Guid cropId)
+    {
+        var crop = await _cropRepository.GetByIdAsync(cropId);
+
+        if (crop is null || !crop.IsActive)
+            throw new NotFoundException("Crop not found.");
+
+        var sensors = await _sensorRepository.GetByCropIdAsync(cropId);
+
+        return sensors.Select(ToResponse).ToList();
+    }
+
+    public async Task<SensorResponse> CreateAsync(
+        CreateSensorRequest request,
+        CancellationToken cancellationToken = default)
     {
         var crop = await _cropRepository.GetByIdAsync(request.CropId);
 
-        if (crop is null)
-            throw new ArgumentException("Crop not found.");
+        if (crop is null || !crop.IsActive)
+            throw new NotFoundException("Crop not found.");
 
         var sensor = new Sensor(
             request.Name,
@@ -38,15 +70,51 @@ public class SensorService
         await _sensorRepository.AddAsync(sensor);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new SensorResponse(sensor.Id, sensor.Name, sensor.Type, sensor.SerialNumber, sensor.CropId, sensor.IsActive);
+        return ToResponse(sensor);
     }
 
-    public async Task<IReadOnlyList<SensorResponse>> GetByCropIdAsync(Guid cropId)
+    public async Task UpdateAsync(
+        Guid id,
+        UpdateSensorRequest request,
+        CancellationToken cancellationToken = default)
     {
-        var sensors = await _sensorRepository.GetByCropIdAsync(cropId);
+        var sensor = await _sensorRepository.GetByIdAsync(id);
 
-        return sensors.Select(sensor =>
-            new SensorResponse(sensor.Id, sensor.Name, sensor.Type, sensor.SerialNumber, sensor.CropId, sensor.IsActive)
-        ).ToList();
+        if (sensor is null || !sensor.IsActive)
+            throw new NotFoundException("Sensor not found.");
+
+        sensor.Update(
+            request.Name,
+            request.Type,
+            request.SerialNumber
+        );
+
+        await _sensorRepository.UpdateAsync(sensor);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task DeleteAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var sensor = await _sensorRepository.GetByIdAsync(id);
+
+        if (sensor is null || !sensor.IsActive)
+            throw new NotFoundException("Sensor not found.");
+
+        await _sensorRepository.DeleteAsync(sensor);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    private static SensorResponse ToResponse(Sensor sensor)
+    {
+        return new SensorResponse(
+            sensor.Id,
+            sensor.Name,
+            sensor.Type,
+            sensor.SerialNumber,
+            sensor.CropId,
+            sensor.IsActive
+        );
     }
 }

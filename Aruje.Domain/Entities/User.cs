@@ -31,6 +31,20 @@ public class User : BaseEntity
         Role = role;
     }
 
+    public void UpdateProfile(string fullName, string email)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            throw new ArgumentException("Full name is required.");
+
+        if (string.IsNullOrWhiteSpace(email))
+            throw new ArgumentException("Email is required.");
+
+        FullName = fullName;
+        Email = email;
+
+        MarkAsUpdated();
+    }
+
     public void ChangeRole(UserRole role)
     {
         Role = role;

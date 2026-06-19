@@ -1,4 +1,6 @@
 ﻿using Aruje.Application.DTOs.AiAnalyses;
+using Aruje.Application.Exceptions;
+using Aruje.Application.Interfaces.Persistence;
 using Aruje.Application.Interfaces.Repositories;
 using Aruje.Application.Interfaces.Services;
 using Aruje.Domain.Entities;
@@ -8,10 +10,14 @@ namespace Aruje.Application.Services;
 public class AiAnalysisService : IAiAnalysisService
 {
     private readonly IAiAnalysisRepository _aiAnalysisRepository;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public AiAnalysisService(IAiAnalysisRepository aiAnalysisRepository)
+    public AiAnalysisService(
+        IAiAnalysisRepository aiAnalysisRepository,
+        IUnitOfWork unitOfWork)
     {
         _aiAnalysisRepository = aiAnalysisRepository;
+        _unitOfWork = unitOfWork;
     }
 
     public Task<AiAnalysis> GenerateAnalysisAsync(
@@ -34,24 +40,44 @@ public class AiAnalysisService : IAiAnalysisService
     {
         var analyses = await _aiAnalysisRepository.GetAllAsync();
 
-        return analyses.Select(analysis => new AiAnalysisResponse(
-            analysis.Id,
-            analysis.AlertId,
-            analysis.RiskLevel,
-            analysis.Reason,
-            analysis.Recommendation,
-            analysis.Provider,
-            analysis.CreatedAt
-        )).ToList();
+        return analyses.Select(ToResponse).ToList();
     }
 
-    public async Task<AiAnalysisResponse?> GetByAlertIdAsync(Guid alertId)
+    public async Task<AiAnalysisResponse> GetByIdAsync(Guid id)
+    {
+        var analysis = await _aiAnalysisRepository.GetByIdAsync(id);
+
+        if (analysis is null || !analysis.IsActive)
+            throw new NotFoundException("AI analysis not found.");
+
+        return ToResponse(analysis);
+    }
+
+    public async Task<AiAnalysisResponse> GetByAlertIdAsync(Guid alertId)
     {
         var analysis = await _aiAnalysisRepository.GetByAlertIdAsync(alertId);
 
-        if (analysis is null)
-            return null;
+        if (analysis is null || !analysis.IsActive)
+            throw new NotFoundException("AI analysis not found for this alert.");
 
+        return ToResponse(analysis);
+    }
+
+    public async Task DeleteAsync(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        var analysis = await _aiAnalysisRepository.GetByIdAsync(id);
+
+        if (analysis is null || !analysis.IsActive)
+            throw new NotFoundException("AI analysis not found.");
+
+        await _aiAnalysisRepository.DeleteAsync(analysis);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    private static AiAnalysisResponse ToResponse(AiAnalysis analysis)
+    {
         return new AiAnalysisResponse(
             analysis.Id,
             analysis.AlertId,

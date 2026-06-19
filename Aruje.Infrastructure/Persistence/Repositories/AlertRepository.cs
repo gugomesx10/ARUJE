@@ -15,21 +15,27 @@ public class AlertRepository : Repository<Alert>, IAlertRepository
     public async Task<IReadOnlyList<Alert>> GetBySensorReadingIdAsync(Guid sensorReadingId)
     {
         return await DbSet
-            .Where(x => x.SensorReadingId == sensorReadingId && x.IsActive)
+            .Where(alert =>
+                alert.IsActive &&
+                alert.SensorReadingId == sensorReadingId)
             .ToListAsync();
     }
 
     public async Task<IReadOnlyList<Alert>> GetByStatusAsync(AlertStatus status)
     {
         return await DbSet
-            .Where(x => x.Status == status && x.IsActive)
+            .Where(alert =>
+                alert.IsActive &&
+                alert.Status == status)
             .ToListAsync();
     }
 
     public async Task<IReadOnlyList<Alert>> GetBySeverityAsync(AlertSeverity severity)
     {
         return await DbSet
-            .Where(x => x.Severity == severity && x.IsActive)
+            .Where(alert =>
+                alert.IsActive &&
+                alert.Severity == severity)
             .ToListAsync();
     }
 }

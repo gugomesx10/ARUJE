@@ -1,6 +1,5 @@
 ﻿namespace Aruje.Application.DTOs.Users;
 
-public class ChangeUserPasswordRequest
-{
-    
-}
+public record ChangeUserPasswordRequest(
+    string NewPassword
+);

@@ -1,6 +1,10 @@
-﻿namespace Aruje.Application.DTOs.Crops;
+﻿using Aruje.Domain.Enums;
 
-public class UpdateCropRequest
-{
-    
-}
+namespace Aruje.Application.DTOs.Crops;
+
+public record UpdateCropRequest(
+    string Name,
+    CropType Type,
+    double AreaHectares,
+    DateTime PlantingDate
+);

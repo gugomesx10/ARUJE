@@ -14,6 +14,8 @@ public class AiAnalysisRepository : Repository<AiAnalysis>, IAiAnalysisRepositor
     public async Task<AiAnalysis?> GetByAlertIdAsync(Guid alertId)
     {
         return await DbSet
-            .FirstOrDefaultAsync(x => x.AlertId == alertId && x.IsActive);
+            .FirstOrDefaultAsync(analysis =>
+                analysis.IsActive &&
+                analysis.AlertId == alertId);
     }
 }

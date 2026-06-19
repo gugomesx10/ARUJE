@@ -1,6 +1,6 @@
 ﻿namespace Aruje.Application.DTOs.Users;
 
-public class UpdateUserRequest
-{
-    
-}
+public record UpdateUserRequest(
+    string FullName,
+    string Email
+);
