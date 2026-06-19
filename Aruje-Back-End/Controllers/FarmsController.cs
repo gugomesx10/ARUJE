@@ -3,6 +3,7 @@ using Aruje.Application.Services;
 using Aruje_Back_End.Responses;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Aruje_Back_End.Controllers;
 
@@ -13,6 +14,7 @@ namespace Aruje_Back_End.Controllers;
 [Route("api/farms")]
 [Produces("application/json")]
 [SwaggerTag("Gerenciamento de fazendas monitoradas pelo Arujé.")]
+[Authorize(Roles = "Admin,Manager")]
 public class FarmsController : ControllerBase
 {
     private readonly FarmService _farmService;

@@ -4,6 +4,7 @@ using Aruje_Back_End.Responses;
 using Aruje.Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Aruje_Back_End.Controllers;
 
@@ -14,6 +15,7 @@ namespace Aruje_Back_End.Controllers;
 [Route("api/alerts")]
 [Produces("application/json")]
 [SwaggerTag("Consulta e gestão de alertas gerados pelas leituras IoT.")]
+[Authorize(Roles = "Admin,Manager,Operator")]
 public class AlertsController : ControllerBase
 {
     private readonly AlertService _alertService;
@@ -119,6 +121,7 @@ public class AlertsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> StartProcessing(
         [FromRoute] Guid id,
         CancellationToken cancellationToken)
@@ -139,6 +142,7 @@ public class AlertsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Resolve(
         [FromRoute] Guid id,
         CancellationToken cancellationToken)
@@ -159,6 +163,7 @@ public class AlertsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Close(
         [FromRoute] Guid id,
         CancellationToken cancellationToken)
@@ -180,6 +185,7 @@ public class AlertsController : ControllerBase
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Delete(
         [FromRoute] Guid id,
         CancellationToken cancellationToken)

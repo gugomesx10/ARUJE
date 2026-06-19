@@ -24,6 +24,7 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<AlertService>());
         services.AddScoped<IAiAnalysisService>(provider =>
             provider.GetRequiredService<AiAnalysisService>());
+        services.AddScoped<AuthService>();
 
         return services;
     }

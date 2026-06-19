@@ -3,6 +3,7 @@ using Aruje.Application.Services;
 using Aruje_Back_End.Responses;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Aruje_Back_End.Controllers;
 
@@ -13,6 +14,7 @@ namespace Aruje_Back_End.Controllers;
 [Route("api/ai-analyses")]
 [Produces("application/json")]
 [SwaggerTag("Consulta de análises inteligentes geradas a partir dos alertas.")]
+[Authorize(Roles = "Admin,Manager,Operator")]
 public class AiAnalysesController : ControllerBase
 {
     private readonly AiAnalysisService _aiAnalysisService;
@@ -92,6 +94,7 @@ public class AiAnalysesController : ControllerBase
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status500InternalServerError)]
+    [Authorize(Roles = "Admin,Manager")]
     public async Task<IActionResult> Delete(
         [FromRoute] Guid id,
         CancellationToken cancellationToken)

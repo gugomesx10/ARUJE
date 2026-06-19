@@ -25,6 +25,7 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<ArujeDbContext>());
 
         services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IFarmRepository, FarmRepository>();
         services.AddScoped<ICropRepository, CropRepository>();
         services.AddScoped<ISensorRepository, SensorRepository>();
@@ -32,6 +33,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAlertRepository, AlertRepository>();
         services.AddScoped<IAiAnalysisRepository, AiAnalysisRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
+        
         
 
         return services;

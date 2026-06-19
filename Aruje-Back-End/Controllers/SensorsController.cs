@@ -3,6 +3,7 @@ using Aruje.Application.Services;
 using Aruje_Back_End.Responses;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Aruje_Back_End.Controllers;
 
@@ -13,6 +14,7 @@ namespace Aruje_Back_End.Controllers;
 [Route("api/sensors")]
 [Produces("application/json")]
 [SwaggerTag("Gerenciamento de sensores IoT vinculados às plantações.")]
+[Authorize(Roles = "Admin,Manager")]
 public class SensorsController : ControllerBase
 {
     private readonly SensorService _sensorService;

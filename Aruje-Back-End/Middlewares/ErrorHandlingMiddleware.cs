@@ -30,6 +30,14 @@ public class ErrorHandlingMiddleware
         {
             await _next(context);
         }
+        catch (UnauthorizedException ex)
+        {
+            await WriteErrorResponseAsync(
+                context,
+                StatusCodes.Status401Unauthorized,
+                ex.Message
+            );
+        }
         catch (NotFoundException ex)
         {
             await WriteErrorResponseAsync(
