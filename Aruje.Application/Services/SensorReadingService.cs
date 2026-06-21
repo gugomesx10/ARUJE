@@ -1,6 +1,6 @@
-﻿using Aruje.Application.DTOs.SensorReadings;
+﻿using System.Text.Json;
+using Aruje.Application.DTOs.SensorReadings;
 using Aruje.Application.Exceptions;
-using Aruje.Application.Interfaces.Messaging;
 using Aruje.Application.Interfaces.Persistence;
 using Aruje.Application.Interfaces.Repositories;
 using Aruje.Application.Interfaces.Services;
@@ -17,8 +17,8 @@ public class SensorReadingService : IIoTIngestionService
     private readonly IAlertRepository _alertRepository;
     private readonly IAiAnalysisService _aiAnalysisService;
     private readonly IAiAnalysisRepository _aiAnalysisRepository;
+    private readonly IOutboxMessageRepository _outboxMessageRepository;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IMessagePublisher? _messagePublisher;
 
     public SensorReadingService(
         ISensorRepository sensorRepository,
@@ -27,8 +27,8 @@ public class SensorReadingService : IIoTIngestionService
         IAlertRepository alertRepository,
         IAiAnalysisService aiAnalysisService,
         IAiAnalysisRepository aiAnalysisRepository,
-        IUnitOfWork unitOfWork,
-        IMessagePublisher? messagePublisher = null)
+        IOutboxMessageRepository outboxMessageRepository,
+        IUnitOfWork unitOfWork)
     {
         _sensorRepository = sensorRepository;
         _sensorReadingRepository = sensorReadingRepository;
@@ -36,8 +36,8 @@ public class SensorReadingService : IIoTIngestionService
         _alertRepository = alertRepository;
         _aiAnalysisService = aiAnalysisService;
         _aiAnalysisRepository = aiAnalysisRepository;
+        _outboxMessageRepository = outboxMessageRepository;
         _unitOfWork = unitOfWork;
-        _messagePublisher = messagePublisher;
     }
 
     public async Task<IReadOnlyList<SensorReadingResponse>> GetAllAsync()
@@ -114,26 +114,26 @@ public class SensorReadingService : IIoTIngestionService
 
         await _sensorReadingRepository.AddAsync(reading);
 
+        var message = new SensorReadingCreatedMessage(
+            reading.Id,
+            reading.SensorId,
+            reading.Temperature,
+            reading.AirHumidity,
+            reading.SoilMoisture,
+            reading.Luminosity,
+            reading.ReadingDate,
+            reading.CreatedAt
+        );
+
+        var outboxMessage = new OutboxMessage(
+            nameof(SensorReadingCreatedMessage),
+            JsonSerializer.Serialize(message)
+        );
+
+        await _outboxMessageRepository.AddAsync(outboxMessage);
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        if (_messagePublisher is not null)
-        {
-            var message = new SensorReadingCreatedMessage(
-                reading.Id,
-                reading.SensorId,
-                reading.Temperature,
-                reading.AirHumidity,
-                reading.SoilMoisture,
-                reading.Luminosity,
-                reading.ReadingDate,
-                reading.CreatedAt
-            );
-
-            await _messagePublisher.PublishSensorReadingCreatedAsync(
-                message,
-                cancellationToken);
-        }
-        
         return reading;
     }
 

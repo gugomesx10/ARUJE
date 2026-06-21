@@ -26,6 +26,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUnitOfWork>(provider =>
             provider.GetRequiredService<ArujeDbContext>());
 
+        services.AddScoped<IOutboxMessageRepository, OutboxMessageRepository>();
         services.AddScoped<IMessagePublisher, RabbitMqMessagePublisher>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();

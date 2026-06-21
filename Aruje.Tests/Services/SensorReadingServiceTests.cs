@@ -1,6 +1,6 @@
-﻿using Aruje.Application.DTOs.SensorReadings;
+﻿using System.Text.Json;
+using Aruje.Application.DTOs.SensorReadings;
 using Aruje.Application.Exceptions;
-using Aruje.Application.Interfaces.Messaging;
 using Aruje.Application.Interfaces.Persistence;
 using Aruje.Application.Interfaces.Repositories;
 using Aruje.Application.Interfaces.Services;
@@ -22,8 +22,8 @@ public class SensorReadingServiceTests
     private readonly Mock<IAlertRepository> _alertRepositoryMock;
     private readonly Mock<IAiAnalysisService> _aiAnalysisServiceMock;
     private readonly Mock<IAiAnalysisRepository> _aiAnalysisRepositoryMock;
+    private readonly Mock<IOutboxMessageRepository> _outboxMessageRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
-    private readonly Mock<IMessagePublisher> _messagePublisherMock;
     private readonly SensorReadingService _sensorReadingService;
 
     public SensorReadingServiceTests()
@@ -34,13 +34,11 @@ public class SensorReadingServiceTests
         _alertRepositoryMock = new Mock<IAlertRepository>();
         _aiAnalysisServiceMock = new Mock<IAiAnalysisService>();
         _aiAnalysisRepositoryMock = new Mock<IAiAnalysisRepository>();
+        _outboxMessageRepositoryMock = new Mock<IOutboxMessageRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
-        _messagePublisherMock = new Mock<IMessagePublisher>();
 
-        _messagePublisherMock
-            .Setup(publisher => publisher.PublishSensorReadingCreatedAsync(
-                It.IsAny<SensorReadingCreatedMessage>(),
-                It.IsAny<CancellationToken>()))
+        _outboxMessageRepositoryMock
+            .Setup(repository => repository.AddAsync(It.IsAny<OutboxMessage>()))
             .Returns(Task.CompletedTask);
 
         _sensorReadingService = new SensorReadingService(
@@ -50,13 +48,13 @@ public class SensorReadingServiceTests
             _alertRepositoryMock.Object,
             _aiAnalysisServiceMock.Object,
             _aiAnalysisRepositoryMock.Object,
-            _unitOfWorkMock.Object,
-            _messagePublisherMock.Object
+            _outboxMessageRepositoryMock.Object,
+            _unitOfWorkMock.Object
         );
     }
 
     [Fact]
-    public async Task CreateAsync_ShouldCreateReadingAndPublishMessage_WhenSensorExists()
+    public async Task CreateAsync_ShouldCreateReadingAndAddOutboxMessage_WhenSensorExists()
     {
         var sensorId = Guid.NewGuid();
 
@@ -77,6 +75,7 @@ public class SensorReadingServiceTests
         );
 
         SensorReading? capturedReading = null;
+        OutboxMessage? capturedOutboxMessage = null;
 
         _sensorRepositoryMock
             .Setup(repository => repository.GetByIdAsync(sensorId))
@@ -85,6 +84,11 @@ public class SensorReadingServiceTests
         _sensorReadingRepositoryMock
             .Setup(repository => repository.AddAsync(It.IsAny<SensorReading>()))
             .Callback<SensorReading>(reading => capturedReading = reading)
+            .Returns(Task.CompletedTask);
+
+        _outboxMessageRepositoryMock
+            .Setup(repository => repository.AddAsync(It.IsAny<OutboxMessage>()))
+            .Callback<OutboxMessage>(message => capturedOutboxMessage = message)
             .Returns(Task.CompletedTask);
 
         _unitOfWorkMock
@@ -102,27 +106,33 @@ public class SensorReadingServiceTests
 
         capturedReading.Should().NotBeNull();
 
+        capturedOutboxMessage.Should().NotBeNull();
+        capturedOutboxMessage!.EventType.Should().Be(nameof(SensorReadingCreatedMessage));
+        capturedOutboxMessage.Payload.Should().NotBeNullOrWhiteSpace();
+
+        var payload = JsonSerializer.Deserialize<SensorReadingCreatedMessage>(
+            capturedOutboxMessage.Payload
+        );
+
+        payload.Should().NotBeNull();
+        payload!.SensorId.Should().Be(sensorId);
+        payload.Temperature.Should().Be(request.Temperature);
+        payload.AirHumidity.Should().Be(request.AirHumidity);
+        payload.SoilMoisture.Should().Be(request.SoilMoisture);
+        payload.Luminosity.Should().Be(request.Luminosity);
+
         _sensorReadingRepositoryMock.Verify(
             repository => repository.AddAsync(It.IsAny<SensorReading>()),
             Times.Once
         );
 
-        _unitOfWorkMock.Verify(
-            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
+        _outboxMessageRepositoryMock.Verify(
+            repository => repository.AddAsync(It.IsAny<OutboxMessage>()),
             Times.Once
         );
 
-        _messagePublisherMock.Verify(
-            publisher => publisher.PublishSensorReadingCreatedAsync(
-                It.Is<SensorReadingCreatedMessage>(message =>
-                    message.SensorId == sensorId &&
-                    message.Temperature == request.Temperature &&
-                    message.AirHumidity == request.AirHumidity &&
-                    message.SoilMoisture == request.SoilMoisture &&
-                    message.Luminosity == request.Luminosity
-                ),
-                It.IsAny<CancellationToken>()
-            ),
+        _unitOfWorkMock.Verify(
+            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Once
         );
 
@@ -138,7 +148,7 @@ public class SensorReadingServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_ShouldCreateReadingAndPublishMessage_WhenCriticalReadingIsSent()
+    public async Task CreateAsync_ShouldCreateReadingAndAddOutboxMessage_WhenCriticalReadingIsSent()
     {
         var sensorId = Guid.NewGuid();
 
@@ -158,12 +168,19 @@ public class SensorReadingServiceTests
             DateTime.UtcNow
         );
 
+        OutboxMessage? capturedOutboxMessage = null;
+
         _sensorRepositoryMock
             .Setup(repository => repository.GetByIdAsync(sensorId))
             .ReturnsAsync(sensor);
 
         _sensorReadingRepositoryMock
             .Setup(repository => repository.AddAsync(It.IsAny<SensorReading>()))
+            .Returns(Task.CompletedTask);
+
+        _outboxMessageRepositoryMock
+            .Setup(repository => repository.AddAsync(It.IsAny<OutboxMessage>()))
+            .Callback<OutboxMessage>(message => capturedOutboxMessage = message)
             .Returns(Task.CompletedTask);
 
         _unitOfWorkMock
@@ -177,27 +194,33 @@ public class SensorReadingServiceTests
         result.Temperature.Should().Be(39);
         result.SoilMoisture.Should().Be(15);
 
+        capturedOutboxMessage.Should().NotBeNull();
+        capturedOutboxMessage!.EventType.Should().Be(nameof(SensorReadingCreatedMessage));
+        capturedOutboxMessage.Payload.Should().NotBeNullOrWhiteSpace();
+
+        var payload = JsonSerializer.Deserialize<SensorReadingCreatedMessage>(
+            capturedOutboxMessage.Payload
+        );
+
+        payload.Should().NotBeNull();
+        payload!.SensorId.Should().Be(sensorId);
+        payload.Temperature.Should().Be(39);
+        payload.AirHumidity.Should().Be(20);
+        payload.SoilMoisture.Should().Be(15);
+        payload.Luminosity.Should().Be(800);
+
         _sensorReadingRepositoryMock.Verify(
             repository => repository.AddAsync(It.IsAny<SensorReading>()),
             Times.Once
         );
 
-        _unitOfWorkMock.Verify(
-            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
+        _outboxMessageRepositoryMock.Verify(
+            repository => repository.AddAsync(It.IsAny<OutboxMessage>()),
             Times.Once
         );
 
-        _messagePublisherMock.Verify(
-            publisher => publisher.PublishSensorReadingCreatedAsync(
-                It.Is<SensorReadingCreatedMessage>(message =>
-                    message.SensorId == sensorId &&
-                    message.Temperature == 39 &&
-                    message.AirHumidity == 20 &&
-                    message.SoilMoisture == 15 &&
-                    message.Luminosity == 800
-                ),
-                It.IsAny<CancellationToken>()
-            ),
+        _unitOfWorkMock.Verify(
+            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Once
         );
 
@@ -255,15 +278,13 @@ public class SensorReadingServiceTests
             Times.Never
         );
 
-        _unitOfWorkMock.Verify(
-            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
+        _outboxMessageRepositoryMock.Verify(
+            repository => repository.AddAsync(It.IsAny<OutboxMessage>()),
             Times.Never
         );
 
-        _messagePublisherMock.Verify(
-            publisher => publisher.PublishSensorReadingCreatedAsync(
-                It.IsAny<SensorReadingCreatedMessage>(),
-                It.IsAny<CancellationToken>()),
+        _unitOfWorkMock.Verify(
+            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Never
         );
     }

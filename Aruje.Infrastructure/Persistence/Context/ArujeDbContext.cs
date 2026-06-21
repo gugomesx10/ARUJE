@@ -18,6 +18,7 @@ public class ArujeDbContext : DbContext, IUnitOfWork
     public DbSet<SensorReading> SensorReadings => Set<SensorReading>();
     public DbSet<Alert> Alerts => Set<Alert>();
     public DbSet<AiAnalysis> AiAnalyses => Set<AiAnalysis>();
+    public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
