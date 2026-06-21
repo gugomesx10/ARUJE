@@ -1,8 +1,10 @@
 ﻿using Aruje.Application.DTOs.SensorReadings;
 using Aruje.Application.Exceptions;
+using Aruje.Application.Interfaces.Messaging;
 using Aruje.Application.Interfaces.Persistence;
 using Aruje.Application.Interfaces.Repositories;
 using Aruje.Application.Interfaces.Services;
+using Aruje.Application.Messaging;
 using Aruje.Application.Services;
 using Aruje.Domain.Entities;
 using Aruje.Domain.Enums;
@@ -21,6 +23,7 @@ public class SensorReadingServiceTests
     private readonly Mock<IAiAnalysisService> _aiAnalysisServiceMock;
     private readonly Mock<IAiAnalysisRepository> _aiAnalysisRepositoryMock;
     private readonly Mock<IUnitOfWork> _unitOfWorkMock;
+    private readonly Mock<IMessagePublisher> _messagePublisherMock;
     private readonly SensorReadingService _sensorReadingService;
 
     public SensorReadingServiceTests()
@@ -32,6 +35,13 @@ public class SensorReadingServiceTests
         _aiAnalysisServiceMock = new Mock<IAiAnalysisService>();
         _aiAnalysisRepositoryMock = new Mock<IAiAnalysisRepository>();
         _unitOfWorkMock = new Mock<IUnitOfWork>();
+        _messagePublisherMock = new Mock<IMessagePublisher>();
+
+        _messagePublisherMock
+            .Setup(publisher => publisher.PublishSensorReadingCreatedAsync(
+                It.IsAny<SensorReadingCreatedMessage>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         _sensorReadingService = new SensorReadingService(
             _sensorRepositoryMock.Object,
@@ -40,12 +50,13 @@ public class SensorReadingServiceTests
             _alertRepositoryMock.Object,
             _aiAnalysisServiceMock.Object,
             _aiAnalysisRepositoryMock.Object,
-            _unitOfWorkMock.Object
+            _unitOfWorkMock.Object,
+            _messagePublisherMock.Object
         );
     }
 
     [Fact]
-    public async Task CreateAsync_ShouldCreateReading_WhenSensorExistsAndNoAlertIsGenerated()
+    public async Task CreateAsync_ShouldCreateReadingAndPublishMessage_WhenSensorExists()
     {
         var sensorId = Guid.NewGuid();
 
@@ -76,12 +87,6 @@ public class SensorReadingServiceTests
             .Callback<SensorReading>(reading => capturedReading = reading)
             .Returns(Task.CompletedTask);
 
-        _alertServiceMock
-            .Setup(service => service.GenerateAlertFromReadingAsync(
-                It.IsAny<SensorReading>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Alert?)null);
-
         _unitOfWorkMock
             .Setup(unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(1);
@@ -102,6 +107,25 @@ public class SensorReadingServiceTests
             Times.Once
         );
 
+        _unitOfWorkMock.Verify(
+            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Once
+        );
+
+        _messagePublisherMock.Verify(
+            publisher => publisher.PublishSensorReadingCreatedAsync(
+                It.Is<SensorReadingCreatedMessage>(message =>
+                    message.SensorId == sensorId &&
+                    message.Temperature == request.Temperature &&
+                    message.AirHumidity == request.AirHumidity &&
+                    message.SoilMoisture == request.SoilMoisture &&
+                    message.Luminosity == request.Luminosity
+                ),
+                It.IsAny<CancellationToken>()
+            ),
+            Times.Once
+        );
+
         _alertRepositoryMock.Verify(
             repository => repository.AddAsync(It.IsAny<Alert>()),
             Times.Never
@@ -111,15 +135,10 @@ public class SensorReadingServiceTests
             repository => repository.AddAsync(It.IsAny<AiAnalysis>()),
             Times.Never
         );
-
-        _unitOfWorkMock.Verify(
-            unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
-            Times.Once
-        );
     }
 
     [Fact]
-    public async Task CreateAsync_ShouldCreateReadingAlertAndAiAnalysis_WhenCriticalReadingIsSent()
+    public async Task CreateAsync_ShouldCreateReadingAndPublishMessage_WhenCriticalReadingIsSent()
     {
         var sensorId = Guid.NewGuid();
 
@@ -139,48 +158,12 @@ public class SensorReadingServiceTests
             DateTime.UtcNow
         );
 
-        var alert = new Alert(
-            "Risco de estresse hídrico",
-            "Temperatura elevada combinada com baixa umidade do solo.",
-            AlertSeverity.High,
-            Guid.NewGuid()
-        );
-
-        var aiAnalysis = new AiAnalysis(
-            alert.Id,
-            "High",
-            alert.Description,
-            "Verificar a plantação e avaliar necessidade de irrigação.",
-            "RuleBased-Mock"
-        );
-
         _sensorRepositoryMock
             .Setup(repository => repository.GetByIdAsync(sensorId))
             .ReturnsAsync(sensor);
 
         _sensorReadingRepositoryMock
             .Setup(repository => repository.AddAsync(It.IsAny<SensorReading>()))
-            .Returns(Task.CompletedTask);
-
-        _alertServiceMock
-            .Setup(service => service.GenerateAlertFromReadingAsync(
-                It.IsAny<SensorReading>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(alert);
-
-        _alertRepositoryMock
-            .Setup(repository => repository.AddAsync(alert))
-            .Returns(Task.CompletedTask);
-
-        _aiAnalysisServiceMock
-            .Setup(service => service.GenerateAnalysisAsync(
-                alert,
-                It.IsAny<SensorReading>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(aiAnalysis);
-
-        _aiAnalysisRepositoryMock
-            .Setup(repository => repository.AddAsync(aiAnalysis))
             .Returns(Task.CompletedTask);
 
         _unitOfWorkMock
@@ -199,19 +182,48 @@ public class SensorReadingServiceTests
             Times.Once
         );
 
-        _alertRepositoryMock.Verify(
-            repository => repository.AddAsync(alert),
-            Times.Once
-        );
-
-        _aiAnalysisRepositoryMock.Verify(
-            repository => repository.AddAsync(aiAnalysis),
-            Times.Once
-        );
-
         _unitOfWorkMock.Verify(
             unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
             Times.Once
+        );
+
+        _messagePublisherMock.Verify(
+            publisher => publisher.PublishSensorReadingCreatedAsync(
+                It.Is<SensorReadingCreatedMessage>(message =>
+                    message.SensorId == sensorId &&
+                    message.Temperature == 39 &&
+                    message.AirHumidity == 20 &&
+                    message.SoilMoisture == 15 &&
+                    message.Luminosity == 800
+                ),
+                It.IsAny<CancellationToken>()
+            ),
+            Times.Once
+        );
+
+        _alertServiceMock.Verify(
+            service => service.GenerateAlertFromReadingAsync(
+                It.IsAny<SensorReading>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+
+        _alertRepositoryMock.Verify(
+            repository => repository.AddAsync(It.IsAny<Alert>()),
+            Times.Never
+        );
+
+        _aiAnalysisServiceMock.Verify(
+            service => service.GenerateAnalysisAsync(
+                It.IsAny<Alert>(),
+                It.IsAny<SensorReading>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+
+        _aiAnalysisRepositoryMock.Verify(
+            repository => repository.AddAsync(It.IsAny<AiAnalysis>()),
+            Times.Never
         );
     }
 
@@ -245,6 +257,13 @@ public class SensorReadingServiceTests
 
         _unitOfWorkMock.Verify(
             unitOfWork => unitOfWork.SaveChangesAsync(It.IsAny<CancellationToken>()),
+            Times.Never
+        );
+
+        _messagePublisherMock.Verify(
+            publisher => publisher.PublishSensorReadingCreatedAsync(
+                It.IsAny<SensorReadingCreatedMessage>(),
+                It.IsAny<CancellationToken>()),
             Times.Never
         );
     }

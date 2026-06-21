@@ -114,24 +114,6 @@ public class SensorReadingService : IIoTIngestionService
 
         await _sensorReadingRepository.AddAsync(reading);
 
-        var alert = await _alertService.GenerateAlertFromReadingAsync(
-            reading,
-            cancellationToken
-        );
-
-        if (alert is not null)
-        {
-            await _alertRepository.AddAsync(alert);
-
-            var aiAnalysis = await _aiAnalysisService.GenerateAnalysisAsync(
-                alert,
-                reading,
-                cancellationToken
-            );
-
-            await _aiAnalysisRepository.AddAsync(aiAnalysis);
-        }
-
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         if (_messagePublisher is not null)
@@ -149,10 +131,9 @@ public class SensorReadingService : IIoTIngestionService
 
             await _messagePublisher.PublishSensorReadingCreatedAsync(
                 message,
-                cancellationToken
-            );
+                cancellationToken);
         }
-
+        
         return reading;
     }
 

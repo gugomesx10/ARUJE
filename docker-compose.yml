@@ -69,9 +69,12 @@ services:
     container_name: aruje-worker
     restart: unless-stopped
     depends_on:
+      aruje-db:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     environment:
+      ConnectionStrings__DefaultConnection: Host=aruje-db;Port=5432;Database=${POSTGRES_DB};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD}
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: 5672
       RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}

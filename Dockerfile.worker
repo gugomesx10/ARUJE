@@ -7,6 +7,7 @@ WORKDIR /src
 COPY ["Aruje.Worker/Aruje.Worker.csproj", "Aruje.Worker/"]
 COPY ["Aruje.Application/Aruje.Application.csproj", "Aruje.Application/"]
 COPY ["Aruje.Domain/Aruje.Domain.csproj", "Aruje.Domain/"]
+COPY ["Aruje.Infrastructure/Aruje.Infrastructure.csproj", "Aruje.Infrastructure/"]
 
 RUN dotnet restore "Aruje.Worker/Aruje.Worker.csproj"
 
