@@ -1,0 +1,11 @@
+﻿apiVersion: 1
+
+providers:
+  - name: Aruje Dashboards
+    orgId: 1
+    folder: Arujé
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
