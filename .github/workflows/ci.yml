@@ -43,5 +43,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Build Docker image
-        run: docker build -t aruje-api:ci .
+      - name: Build API Docker image
+        run: docker build -t aruje-api:ci -f Dockerfile .
+
+      - name: Build Worker Docker image
+        run: docker build -t aruje-worker:ci -f Dockerfile.worker .
