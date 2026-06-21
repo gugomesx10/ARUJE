@@ -13,6 +13,7 @@ using System.Text.Json;
 using Aruje_Back_End.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Prometheus;
+using Aruje.Infrastructure.Persistence.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -140,6 +141,11 @@ builder.Services
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+if (app.Configuration.GetValue<bool>("Seed:DemoData"))
+{
+    await DatabaseSeeder.SeedAsync(app.Services);
+}
 
 // Pipeline HTTP
 if (app.Environment.IsDevelopment())

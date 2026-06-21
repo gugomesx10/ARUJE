@@ -66,6 +66,7 @@ services:
       RabbitMq__DeadLetterExchangeName: aruje.sensor-readings.dlx
       RabbitMq__DeadLetterQueueName: sensor-reading-created.dlq
       RabbitMq__DeadLetterRoutingKey: sensor-reading.created.dead
+      Seed__DemoData: true
       
   aruje-worker:
     build:
