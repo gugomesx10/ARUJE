@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Aruje.Infrastructure.Services;
+using Aruje.Application.Interfaces.Messaging;
+using Aruje.Infrastructure.Messaging;
 
 namespace Aruje.Infrastructure.DependencyInjection;
 
@@ -24,6 +26,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUnitOfWork>(provider =>
             provider.GetRequiredService<ArujeDbContext>());
 
+        services.AddScoped<IMessagePublisher, RabbitMqMessagePublisher>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IFarmRepository, FarmRepository>();

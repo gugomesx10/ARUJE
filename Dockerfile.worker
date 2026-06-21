@@ -1,0 +1,21 @@
+FROM mcr.microsoft.com/dotnet/runtime:8.0 AS runtime
+WORKDIR /app
+
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+COPY ["Aruje.Worker/Aruje.Worker.csproj", "Aruje.Worker/"]
+COPY ["Aruje.Application/Aruje.Application.csproj", "Aruje.Application/"]
+COPY ["Aruje.Domain/Aruje.Domain.csproj", "Aruje.Domain/"]
+
+RUN dotnet restore "Aruje.Worker/Aruje.Worker.csproj"
+
+COPY . .
+
+RUN dotnet publish "Aruje.Worker/Aruje.Worker.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+FROM runtime AS final
+WORKDIR /app
+COPY --from=build /app/publish .
+
+ENTRYPOINT ["dotnet", "Aruje.Worker.dll"]

@@ -1,8 +1,10 @@
 ﻿using Aruje.Application.DTOs.SensorReadings;
 using Aruje.Application.Exceptions;
+using Aruje.Application.Interfaces.Messaging;
 using Aruje.Application.Interfaces.Persistence;
 using Aruje.Application.Interfaces.Repositories;
 using Aruje.Application.Interfaces.Services;
+using Aruje.Application.Messaging;
 using Aruje.Domain.Entities;
 
 namespace Aruje.Application.Services;
@@ -16,6 +18,7 @@ public class SensorReadingService : IIoTIngestionService
     private readonly IAiAnalysisService _aiAnalysisService;
     private readonly IAiAnalysisRepository _aiAnalysisRepository;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IMessagePublisher? _messagePublisher;
 
     public SensorReadingService(
         ISensorRepository sensorRepository,
@@ -24,7 +27,8 @@ public class SensorReadingService : IIoTIngestionService
         IAlertRepository alertRepository,
         IAiAnalysisService aiAnalysisService,
         IAiAnalysisRepository aiAnalysisRepository,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        IMessagePublisher? messagePublisher = null)
     {
         _sensorRepository = sensorRepository;
         _sensorReadingRepository = sensorReadingRepository;
@@ -33,6 +37,7 @@ public class SensorReadingService : IIoTIngestionService
         _aiAnalysisService = aiAnalysisService;
         _aiAnalysisRepository = aiAnalysisRepository;
         _unitOfWork = unitOfWork;
+        _messagePublisher = messagePublisher;
     }
 
     public async Task<IReadOnlyList<SensorReadingResponse>> GetAllAsync()
@@ -128,6 +133,25 @@ public class SensorReadingService : IIoTIngestionService
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        if (_messagePublisher is not null)
+        {
+            var message = new SensorReadingCreatedMessage(
+                reading.Id,
+                reading.SensorId,
+                reading.Temperature,
+                reading.AirHumidity,
+                reading.SoilMoisture,
+                reading.Luminosity,
+                reading.ReadingDate,
+                reading.CreatedAt
+            );
+
+            await _messagePublisher.PublishSensorReadingCreatedAsync(
+                message,
+                cancellationToken
+            );
+        }
 
         return reading;
     }
