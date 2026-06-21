@@ -61,6 +61,11 @@ services:
       RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
       RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
       RabbitMq__QueueName: sensor-reading-created
+      RabbitMq__ExchangeName: aruje.sensor-readings
+      RabbitMq__RoutingKey: sensor-reading.created
+      RabbitMq__DeadLetterExchangeName: aruje.sensor-readings.dlx
+      RabbitMq__DeadLetterQueueName: sensor-reading-created.dlq
+      RabbitMq__DeadLetterRoutingKey: sensor-reading.created.dead
       
   aruje-worker:
     build:
@@ -80,6 +85,11 @@ services:
       RabbitMq__UserName: ${RABBITMQ_DEFAULT_USER}
       RabbitMq__Password: ${RABBITMQ_DEFAULT_PASS}
       RabbitMq__QueueName: sensor-reading-created
+      RabbitMq__ExchangeName: aruje.sensor-readings
+      RabbitMq__RoutingKey: sensor-reading.created
+      RabbitMq__DeadLetterExchangeName: aruje.sensor-readings.dlx
+      RabbitMq__DeadLetterQueueName: sensor-reading-created.dlq
+      RabbitMq__DeadLetterRoutingKey: sensor-reading.created.dead
 
   prometheus:
     image: prom/prometheus:latest

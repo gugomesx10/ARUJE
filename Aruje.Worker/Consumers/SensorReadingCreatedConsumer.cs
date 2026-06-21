@@ -33,7 +33,14 @@ public class SensorReadingCreatedConsumer : BackgroundService
         var hostName = _configuration["RabbitMq:HostName"] ?? "localhost";
         var userName = _configuration["RabbitMq:UserName"] ?? "guest";
         var password = _configuration["RabbitMq:Password"] ?? "guest";
+
+        var exchangeName = _configuration["RabbitMq:ExchangeName"] ?? "aruje.sensor-readings";
         var queueName = _configuration["RabbitMq:QueueName"] ?? "sensor-reading-created";
+        var routingKey = _configuration["RabbitMq:RoutingKey"] ?? "sensor-reading.created";
+
+        var deadLetterExchangeName = _configuration["RabbitMq:DeadLetterExchangeName"] ?? "aruje.sensor-readings.dlx";
+        var deadLetterQueueName = _configuration["RabbitMq:DeadLetterQueueName"] ?? "sensor-reading-created.dlq";
+        var deadLetterRoutingKey = _configuration["RabbitMq:DeadLetterRoutingKey"] ?? "sensor-reading.created.dead";
 
         var portValue = _configuration["RabbitMq:Port"];
         var port = int.TryParse(portValue, out var parsedPort) ? parsedPort : 5672;
@@ -50,12 +57,52 @@ public class SensorReadingCreatedConsumer : BackgroundService
         _connection = factory.CreateConnection();
         _channel = _connection.CreateModel();
 
+        _channel.ExchangeDeclare(
+            exchange: exchangeName,
+            type: ExchangeType.Direct,
+            durable: true,
+            autoDelete: false
+        );
+
+        _channel.ExchangeDeclare(
+            exchange: deadLetterExchangeName,
+            type: ExchangeType.Direct,
+            durable: true,
+            autoDelete: false
+        );
+
+        _channel.QueueDeclare(
+            queue: deadLetterQueueName,
+            durable: true,
+            exclusive: false,
+            autoDelete: false,
+            arguments: null
+        );
+
+        _channel.QueueBind(
+            queue: deadLetterQueueName,
+            exchange: deadLetterExchangeName,
+            routingKey: deadLetterRoutingKey
+        );
+
+        var queueArguments = new Dictionary<string, object>
+        {
+            ["x-dead-letter-exchange"] = deadLetterExchangeName,
+            ["x-dead-letter-routing-key"] = deadLetterRoutingKey
+        };
+
         _channel.QueueDeclare(
             queue: queueName,
             durable: true,
             exclusive: false,
             autoDelete: false,
-            arguments: null
+            arguments: queueArguments
+        );
+
+        _channel.QueueBind(
+            queue: queueName,
+            exchange: exchangeName,
+            routingKey: routingKey
         );
 
         _channel.BasicQos(
@@ -83,8 +130,14 @@ public class SensorReadingCreatedConsumer : BackgroundService
 
                 if (message is null)
                 {
-                    _logger.LogWarning("Received an invalid sensor reading message.");
-                    _channel.BasicAck(eventArgs.DeliveryTag, multiple: false);
+                    _logger.LogWarning("Received an invalid sensor reading message. Sending to DLQ.");
+
+                    _channel.BasicNack(
+                        eventArgs.DeliveryTag,
+                        multiple: false,
+                        requeue: false
+                    );
+
                     return;
                 }
 
@@ -94,12 +147,12 @@ public class SensorReadingCreatedConsumer : BackgroundService
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing sensor reading message.");
+                _logger.LogError(ex, "Error processing sensor reading message. Sending to DLQ.");
 
                 _channel.BasicNack(
                     eventArgs.DeliveryTag,
                     multiple: false,
-                    requeue: true
+                    requeue: false
                 );
             }
         };
@@ -113,6 +166,11 @@ public class SensorReadingCreatedConsumer : BackgroundService
         _logger.LogInformation(
             "Aruje Worker is listening to RabbitMQ queue: {QueueName}",
             queueName
+        );
+
+        _logger.LogInformation(
+            "Dead Letter Queue configured: {DeadLetterQueueName}",
+            deadLetterQueueName
         );
 
         await Task.Delay(Timeout.Infinite, stoppingToken);
