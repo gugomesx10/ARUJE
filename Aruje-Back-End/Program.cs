@@ -11,13 +11,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text.Json;
 using Aruje_Back_End.HealthChecks;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Prometheus;
 using Aruje.Infrastructure.Persistence.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers
 builder.Services.AddScoped<ValidationFilter>();
 
 builder.Services.AddControllers(options =>
@@ -49,6 +47,18 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     };
 });
 
+// CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MobileCors", policy =>
+    {
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 // Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 
@@ -66,8 +76,6 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 
-    options.EnableAnnotations();
-    
     options.EnableAnnotations();
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -104,7 +112,6 @@ builder.Services.AddSwaggerGen(options =>
     }
 });
 
-// Application / Infrastructure
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -147,7 +154,6 @@ if (app.Configuration.GetValue<bool>("Seed:DemoData"))
     await DatabaseSeeder.SeedAsync(app.Services);
 }
 
-// Pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -160,6 +166,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ErrorHandlingMiddleware>();
+
+app.UseCors("MobileCors");
 
 app.UseHttpsRedirection();
 
