@@ -1,0 +1,86 @@
+﻿{
+  "version": 1,
+  "author": "Gustavo Gomes",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 14.3, "left": 23.8, "attrs": {} },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht",
+      "top": -134.1,
+      "left": 253.8,
+      "attrs": { "temperature": "29", "humidity": "62" }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "soil",
+      "top": -241.3,
+      "left": -29,
+      "attrs": { "value": "45" }
+    },
+    {
+      "type": "wokwi-photoresistor-sensor",
+      "id": "ldr",
+      "top": 245,
+      "left": 270,
+      "attrs": { "lux": "700" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledOk",
+      "top": -51.6,
+      "left": -217,
+      "attrs": { "color": "green" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "resOk",
+      "top": -15.25,
+      "left": -105.6,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-led",
+      "id": "ledAlert",
+      "top": 44.4,
+      "left": -226.6,
+      "attrs": { "color": "red" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "resAlert",
+      "top": 110,
+      "left": -120,
+      "attrs": { "value": "220" }
+    },
+    {
+      "type": "wokwi-buzzer",
+      "id": "buzzer",
+      "top": 210,
+      "left": -150,
+      "attrs": { "volume": "0.1" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX0", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX0", "$serialMonitor:TX", "", [] ],
+    [ "esp:3V3", "dht:VCC", "red", [] ],
+    [ "esp:GND.1", "dht:GND", "black", [] ],
+    [ "esp:D15", "dht:SDA", "green", [] ],
+    [ "esp:3V3", "soil:VCC", "red", [] ],
+    [ "esp:GND.1", "soil:GND", "black", [] ],
+    [ "esp:D34", "soil:SIG", "green", [ "h-19.2", "v-73.1", "h0.4" ] ],
+    [ "esp:3V3", "ldr:VCC", "red", [ "v13.5", "h349.1", "v69" ] ],
+    [ "esp:GND.1", "ldr:GND", "black", [ "h368.3", "v102" ] ],
+    [ "esp:D35", "ldr:AO", "green", [ "h-25", "v262.7", "h508.8", "v-55.1" ] ],
+    [ "esp:D25", "ledOk:A", "green", [ "h-73", "h-147.8" ] ],
+    [ "ledOk:C", "resOk:1", "black", [] ],
+    [ "resOk:2", "esp:GND.1", "black", [ "h238.8", "v207.4" ] ],
+    [ "esp:D26", "ledAlert:A", "red", [ "v3.8", "h-178.6", "h-48" ] ],
+    [ "ledAlert:C", "resAlert:1", "black", [ "v28.8", "h91.6" ] ],
+    [ "resAlert:2", "esp:GND.1", "black", [ "h224.4", "v47.65" ] ],
+    [ "esp:D27", "buzzer:1", "purple", [ "h-226.6", "v163.2" ] ],
+    [ "buzzer:2", "esp:GND.1", "black", [ "v3.6", "h276.2", "v-128.6" ] ]
+  ],
+  "dependencies": {}
+}
