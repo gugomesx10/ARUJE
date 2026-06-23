@@ -38,6 +38,12 @@ public class PushNotificationService : IPushNotificationService
             return;
         }
 
+        _logger.LogInformation(
+            "Enviando push notification para {TokenCount} dispositivo(s). AlertId: {AlertId}",
+            tokens.Count,
+            alert.Id
+        );
+
         foreach (var token in tokens)
         {
             var payload = new
@@ -50,23 +56,44 @@ public class PushNotificationService : IPushNotificationService
                 {
                     screen = "AlertDetails",
                     alertId = alert.Id.ToString(),
-                    severity = alert.Severity.ToString(),
+                    severity = alert.Severity.ToString()
                 }
             };
 
-            var response = await _httpClient.PostAsJsonAsync(
-                "https://exp.host/--/api/v2/push/send",
-                payload,
-                cancellationToken);
-
-            if (!response.IsSuccessStatusCode)
+            try
             {
-                var error = await response.Content.ReadAsStringAsync(cancellationToken);
+                var response = await _httpClient.PostAsJsonAsync(
+                    "https://exp.host/--/api/v2/push/send",
+                    payload,
+                    cancellationToken
+                );
 
+                var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning(
+                        "Erro HTTP ao enviar push notification. Status: {StatusCode}. Resposta: {ResponseBody}",
+                        response.StatusCode,
+                        responseBody
+                    );
+
+                    continue;
+                }
+
+                _logger.LogInformation(
+                    "Push notification enviada para Expo. Token: {Token}. Resposta: {ResponseBody}",
+                    token,
+                    responseBody
+                );
+            }
+            catch (Exception ex)
+            {
                 _logger.LogWarning(
-                    "Erro ao enviar push notification. Status: {StatusCode}. Erro: {Error}",
-                    response.StatusCode,
-                    error);
+                    ex,
+                    "Falha ao tentar enviar push notification para o token {Token}.",
+                    token
+                );
             }
         }
     }
