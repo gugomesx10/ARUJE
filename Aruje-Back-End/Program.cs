@@ -154,7 +154,7 @@ if (app.Configuration.GetValue<bool>("Seed:DemoData"))
     await DatabaseSeeder.SeedAsync(app.Services);
 }
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
 
