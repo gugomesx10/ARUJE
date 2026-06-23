@@ -13,6 +13,8 @@ using System.Text.Json;
 using Aruje_Back_End.HealthChecks;
 using Prometheus;
 using Aruje.Infrastructure.Persistence.Seed;
+using Aruje.Infrastructure.Persistence.Context;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -148,6 +150,12 @@ builder.Services
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ArujeDbContext>();
+    dbContext.Database.Migrate();
+}
 
 if (app.Configuration.GetValue<bool>("Seed:DemoData"))
 {
