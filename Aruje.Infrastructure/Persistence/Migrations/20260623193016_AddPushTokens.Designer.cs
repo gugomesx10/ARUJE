@@ -3,6 +3,7 @@ using System;
 using Aruje.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Aruje.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ArujeDbContext))]
-    partial class ArujeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260623193016_AddPushTokens")]
+    partial class AddPushTokens
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
