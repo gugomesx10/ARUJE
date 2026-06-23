@@ -16,6 +16,7 @@ using Aruje.Infrastructure.Persistence.Seed;
 using Aruje.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<ValidationFilter>();
@@ -154,7 +155,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ArujeDbContext>();
-    dbContext.Database.Migrate();
+    await dbContext.Database.MigrateAsync();
+    await DatabaseSeeder.SeedAsync(scope.ServiceProvider);
 }
 
 if (app.Configuration.GetValue<bool>("Seed:DemoData"))
