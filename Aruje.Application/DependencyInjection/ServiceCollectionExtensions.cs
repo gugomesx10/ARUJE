@@ -1,5 +1,6 @@
 ﻿using Aruje.Application.Interfaces.Services;
 using Aruje.Application.Services;
+using Aruje.Application.Services.Rag;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,13 +19,17 @@ public static class ServiceCollectionExtensions
         services.AddScoped<AlertService>();
         services.AddScoped<AiAnalysisService>();
         services.AddScoped<UserService>();
+        services.AddScoped<AuthService>();
         services.AddScoped<IIoTIngestionService>(provider =>
             provider.GetRequiredService<SensorReadingService>());
         services.AddScoped<IAlertService>(provider =>
             provider.GetRequiredService<AlertService>());
         services.AddScoped<IAiAnalysisService>(provider =>
             provider.GetRequiredService<AiAnalysisService>());
-        services.AddScoped<AuthService>();
+        services.AddScoped<IRagContextBuilder, RagContextBuilder>();
+        services.AddScoped<IRagPromptBuilder, RagPromptBuilder>();
+        services.AddScoped<IRagLlmProvider, RuleBasedRagLlmProvider>();
+        services.AddScoped<IRagAssistantService, RagAssistantService>();
 
         return services;
     }
