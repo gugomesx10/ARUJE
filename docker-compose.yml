@@ -67,6 +67,8 @@ services:
       RabbitMq__DeadLetterQueueName: sensor-reading-created.dlq
       RabbitMq__DeadLetterRoutingKey: sensor-reading.created.dead
       Seed__DemoData: true
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      GEMINI_MODEL: ${GEMINI_MODEL}
       
   aruje-worker:
     build:
