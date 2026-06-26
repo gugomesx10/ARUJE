@@ -44,12 +44,16 @@ public class GeminiRagLlmProvider : IRagLlmProvider
                 "Use apenas o contexto recebido. Não invente sensores, leituras, alertas ou recomendações.\n" +
                 "Ajude pessoas que talvez tenham dificuldade para explicar problemas técnicos.\n" +
                 "Não exponha IDs técnicos na resposta principal.\n" +
-                "Retorne somente JSON válido neste formato:\n" +
-                "{\n" +
-                "  \"answer\": \"resposta amigável e acessível\",\n" +
-                "  \"riskLevel\": \"Alto, Médio, Baixo ou Indefinido\",\n" +
-                "  \"recommendation\": \"ação prática recomendada\"\n" +
-                "}\n\n" +
+                "Seja breve. O campo answer deve ter no máximo 4 frases.\n" +
+                "O campo recommendation deve ter no máximo 2 frases.\n" +
+                "Não escreva JSON dentro do campo answer.\n" +
+                "Não use markdown.\n" +
+                "Não use bloco de código.\n" +
+                "Retorne uma resposta em JSON válido, sem markdown, sem bloco de código e sem texto fora do JSON.\n" +
+                "O JSON deve ter exatamente estes campos:\n" +
+                "- answer: resposta amigável e acessível\n" +
+                "- riskLevel: Alto, Médio, Baixo ou Indefinido\n" +
+                "- recommendation: ação prática recomendada\n\n" +
                 "Contexto recuperado do Arujé:\n" +
                 prompt;
             
@@ -71,9 +75,10 @@ public class GeminiRagLlmProvider : IRagLlmProvider
                 },
                 generationConfig = new
                 {
-                    temperature = 0.35,
-                    topP = 0.9,
-                    maxOutputTokens = 900
+                    temperature = 0.2,
+                    topP = 0.8,
+                    maxOutputTokens = 2048,
+                    responseMimeType = "application/json"
                 }
             };
 
@@ -119,17 +124,10 @@ public class GeminiRagLlmProvider : IRagLlmProvider
             if (parsed is not null)
                 return parsed;
 
-            var fallback = await _fallbackProvider.GenerateAsync(
+            return await _fallbackProvider.GenerateAsync(
                 prompt,
                 context,
                 cancellationToken
-            );
-
-            return new RagLlmResponse(
-                geminiText.Trim(),
-                fallback.RiskLevel,
-                fallback.Recommendation,
-                "Gemini-RAG"
             );
         }
         catch
