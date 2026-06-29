@@ -28,6 +28,7 @@ public static class ServiceCollectionExtensions
             provider.GetRequiredService<AiAnalysisService>());
         services.AddScoped<IRagContextBuilder, RagContextBuilder>();
         services.AddScoped<IRagPromptBuilder, RagPromptBuilder>();
+        services.AddScoped<IRagIntentClassifier, RuleBasedRagIntentClassifier>();
         services.AddScoped<IRagLlmProvider, GeminiRagLlmProvider>();
         services.AddScoped<IRagAssistantService, RagAssistantService>();
 
