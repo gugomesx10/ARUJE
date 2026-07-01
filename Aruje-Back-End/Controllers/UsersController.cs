@@ -1,6 +1,7 @@
 ﻿using Aruje.Application.DTOs.Users;
 using Aruje.Application.Services;
 using Aruje_Back_End.Responses;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Swashbuckle.AspNetCore.Annotations;
 
@@ -13,6 +14,7 @@ namespace Aruje_Back_End.Controllers;
 [Route("api/users")]
 [Produces("application/json")]
 [SwaggerTag("Gerenciamento de usuários da plataforma Arujé.")]
+[Authorize(Roles = "Admin")]
 public class UsersController : ControllerBase
 {
     private readonly UserService _userService;

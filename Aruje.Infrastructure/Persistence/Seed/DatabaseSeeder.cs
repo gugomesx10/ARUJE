@@ -20,31 +20,60 @@ public static class DatabaseSeeder
 
         await context.Database.MigrateAsync();
 
-        const string demoEmail = "gustavo@aruje.com";
         const string demoFarmName = "Fazenda Demo Arujé";
+
+        var demoUsers = new[]
+        {
+            new
+            {
+                FullName = "Gustavo Gomes",
+                Email = "gustavo@aruje.com",
+                Password = "Aruje123@",
+                Role = UserRole.Admin
+            },
+            new
+            {
+                FullName = "Manager",
+                Email = "manager@aruje.com",
+                Password = "Aruje123@",
+                Role = UserRole.Manager
+            },
+            new
+            {
+                FullName = "Operator",
+                Email = "operator@aruje.com",
+                Password = "Aruje123@",
+                Role = UserRole.Operator
+            }
+        };
+
+        foreach (var demoUser in demoUsers)
+        {
+            var userAlreadyExists = await context.Users
+                .AnyAsync(user => user.Email == demoUser.Email);
+
+            if (userAlreadyExists)
+                continue;
+
+            var user = new User(
+                demoUser.FullName,
+                demoUser.Email,
+                BCrypt.Net.BCrypt.HashPassword(demoUser.Password),
+                demoUser.Role
+            );
+
+            await context.Users.AddAsync(user);
+        }
 
         var demoFarmAlreadyExists = await context.Farms
             .AnyAsync(farm => farm.Name == demoFarmName);
 
         if (demoFarmAlreadyExists)
         {
-            logger.LogInformation("Demo seed already exists. Skipping seed.");
+            await context.SaveChangesAsync();
+
+            logger.LogInformation("Demo users verified. Demo farm already exists. Skipping farm seed.");
             return;
-        }
-
-        var userAlreadyExists = await context.Users
-            .AnyAsync(user => user.Email == demoEmail);
-
-        if (!userAlreadyExists)
-        {
-            var admin = new User(
-                "Gustavo Gomes",
-                demoEmail,
-                BCrypt.Net.BCrypt.HashPassword("Aruje123@"),
-                UserRole.Admin
-            );
-
-            await context.Users.AddAsync(admin);
         }
 
         var farm = new Farm(
